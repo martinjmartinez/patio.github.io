@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>G-Patio 01-FU · Dashboard de Rendimiento</title>
+  <meta name="description" content="Dashboard interactivo del Fideicomiso de Oferta Pública de Valores Fiduciarios G-Patio 01-FU - República Dominicana" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: linear-gradient(180deg, #0c1222 0%, #0f172a 40%, #0c1222 100%);
+      font-family: 'DM Sans', sans-serif;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+
+    .container { max-width: 920px; margin: 0 auto; padding: 40px 24px; position: relative; z-index: 1; }
+
+    .bg-orb-1 {
+      position: fixed; top: -200px; right: -200px; width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(20,184,166,0.06) 0%, transparent 70%);
+      pointer-events: none; z-index: 0;
+    }
+    .bg-orb-2 {
+      position: fixed; bottom: -100px; left: -100px; width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(15,118,110,0.08) 0%, transparent 70%);
+      pointer-events: none; z-index: 0;
+    }
+
+    .badge {
+      display: inline-block;
+      background: rgba(20, 184, 166, 0.1);
+      border: 1px solid rgba(20, 184, 166, 0.25);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 11px;
+      color: #14b8a6;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 36px;
+      font-family: 'Instrument Serif', serif;
+      font-weight: 400;
+      color: #f1f5f9;
+      line-height: 1.2;
+    }
+    h1 span { color: #14b8a6; }
+
+    .subtitle { color: #64748b; font-size: 14px; margin-top: 8px; line-height: 1.6; }
+    .subtitle span { color: #14b8a6; font-weight: 600; }
+
+    .tabs {
+      display: flex; gap: 4px; margin: 24px 0 32px;
+      background: rgba(30,41,59,0.4); border-radius: 10px;
+      padding: 4px; width: fit-content; flex-wrap: wrap;
+    }
+    .tab-btn {
+      padding: 8px 18px; border-radius: 8px; border: none;
+      background: transparent; color: #64748b;
+      font-size: 13px; font-weight: 500; cursor: pointer;
+      font-family: 'DM Sans', sans-serif; transition: all 0.2s;
+    }
+    .tab-btn.active { background: rgba(20,184,166,0.15); color: #5eead4; }
+    .tab-btn:hover:not(.active) { color: #94a3b8; }
+
+    .cards { display: flex; flex-wrap: wrap; gap: 14px; }
+
+    .stat-card {
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid rgba(51, 65, 85, 0.5);
+      border-radius: 12px;
+      padding: 20px 22px;
+      flex: 1 1 200px;
+      min-width: 180px;
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: default;
+    }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+    .stat-card.accent {
+      background: linear-gradient(135deg, rgba(20, 184, 166, 0.15), rgba(15, 118, 110, 0.08));
+      border-color: rgba(20, 184, 166, 0.3);
+    }
+    .stat-label {
+      font-size: 11px; color: #64748b; text-transform: uppercase;
+      letter-spacing: 1.5px; font-weight: 500;
+    }
+    .stat-value {
+      font-size: 28px; color: #e2e8f0; font-weight: 700;
+      margin-top: 6px; font-family: 'Instrument Serif', serif;
+    }
+    .stat-card.accent .stat-value { color: #5eead4; }
+    .stat-sub { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+    .stat-card.accent .stat-sub { color: #14b8a6; }
+
+    .section-title {
+      display: flex; align-items: center; gap: 10px;
+      margin: 40px 0 20px;
+    }
+    .section-title .icon { font-size: 20px; }
+    .section-title h2 {
+      font-size: 18px; color: #e2e8f0;
+      font-family: 'Instrument Serif', serif;
+      font-weight: 400; letter-spacing: 0.5px;
+    }
+    .section-title .line {
+      flex: 1; height: 1px;
+      background: linear-gradient(90deg, rgba(20,184,166,0.3), transparent);
+      margin-left: 10px;
+    }
+
+    .chart-box {
+      background: rgba(30, 41, 59, 0.3);
+      border: 1px solid rgba(51, 65, 85, 0.4);
+      border-radius: 14px;
+      padding: 24px 20px 16px;
+      position: relative;
+      height: 370px;
+    }
+
+    .pie-section { display: flex; flex-wrap: wrap; gap: 24px; align-items: center; }
+    .pie-chart-wrap { width: 220px; height: 220px; }
+    .pie-legend { flex: 1; min-width: 200px; }
+    .pie-legend-item { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .pie-legend-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+    .pie-legend-name { font-size: 13px; color: #94a3b8; flex: 1; }
+    .pie-legend-val { font-size: 14px; font-weight: 600; color: #e2e8f0; }
+
+    .note {
+      margin-top: 32px; padding: 16px 20px;
+      background: rgba(20, 184, 166, 0.05);
+      border: 1px solid rgba(20, 184, 166, 0.15);
+      border-radius: 10px; font-size: 12px; color: #64748b; line-height: 1.7;
+    }
+    .note strong { color: #94a3b8; }
+
+    .footer {
+      margin-top: 48px; padding-top: 24px;
+      border-top: 1px solid rgba(51,65,85,0.3);
+      display: flex; justify-content: space-between;
+      flex-wrap: wrap; gap: 12px; font-size: 11px; color: #475569;
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    @media (max-width: 600px) {
+      h1 { font-size: 28px; }
+      .stat-value { font-size: 22px; }
+      .stat-card { min-width: 140px; padding: 14px 16px; }
+      .chart-box { height: 300px; padding: 16px 12px 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-orb-1"></div>
+  <div class="bg-orb-2"></div>
+
+  <div class="container">
+    <div class="badge">Fideicomiso Inmobiliario · BVRD</div>
+    <h1>G-Patio <span>01-FU</span></h1>
+    <p class="subtitle">Fideicomiso de Oferta Pública de Valores Fiduciarios · Calificación <span>A+fo</span> por Feller Rate</p>
+
+    <div class="tabs" id="tabBar">
+      <button class="tab-btn active" data-tab="general">Resumen</button>
+      <button class="tab-btn" data-tab="patrimonio">Patrimonio</button>
+      <button class="tab-btn" data-tab="cuota">Precio Cuota</button>
+      <button class="tab-btn" data-tab="rendimiento">Rendimiento</button>
+    </div>
+
+    <!-- GENERAL -->
+    <div id="tab-general" class="tab-content active">
+      <div class="cards">
+        <div class="stat-card accent"><div class="stat-label">Precio Cuota</div><div class="stat-value">US$ 1,246</div><div class="stat-sub">Ref. Feb 2025 · BVRD</div></div>
+        <div class="stat-card"><div class="stat-label">Patrimonio</div><div class="stat-value">US$ 15.5M</div><div class="stat-sub">Estimado Feb 2025</div></div>
+        <div class="stat-card accent"><div class="stat-label">Rent. Acum.</div><div class="stat-value">41.1%</div><div class="stat-sub">Nov 2019 – Nov 2022</div></div>
+        <div class="stat-card"><div class="stat-label">Ocupación</div><div class="stat-value">95%</div><div class="stat-sub">Locales comerciales</div></div>
+      </div>
+      <div class="cards" style="margin-top:14px">
+        <div class="stat-card"><div class="stat-label">Rent. Anualizada</div><div class="stat-value">13.4%</div><div class="stat-sub">Promedio 3 años</div></div>
+        <div class="stat-card"><div class="stat-label">Calificación</div><div class="stat-value">A+fo</div><div class="stat-sub">Feller Rate · Ratificada</div></div>
+        <div class="stat-card"><div class="stat-label">Locales</div><div class="stat-value">37</div><div class="stat-sub">En 4 plazas comerciales</div></div>
+        <div class="stat-card"><div class="stat-label">Vencimiento</div><div class="stat-value">Mar 2034</div><div class="stat-sub">15 años desde colocación</div></div>
+      </div>
+
+      <div class="section-title"><span class="icon">🏢</span><h2>Distribución de Locales por Plaza Comercial</h2><div class="line"></div></div>
+      <div class="pie-section">
+        <div class="pie-chart-wrap"><canvas id="pieChart"></canvas></div>
+        <div class="pie-legend">
+          <div class="pie-legend-item"><div class="pie-legend-dot" style="background:#0f766e"></div><span class="pie-legend-name">Patio del Norte</span><span class="pie-legend-val">25 locales</span></div>
+          <div class="pie-legend-item"><div class="pie-legend-dot" style="background:#14b8a6"></div><span class="pie-legend-name">Bella Vista Mall</span><span class="pie-legend-val">2 locales</span></div>
+          <div class="pie-legend-item"><div class="pie-legend-dot" style="background:#5eead4"></div><span class="pie-legend-name">Colinas Mall</span><span class="pie-legend-val">6 locales</span></div>
+          <div class="pie-legend-item"><div class="pie-legend-dot" style="background:#99f6e4"></div><span class="pie-legend-name">Centro Nac. Este</span><span class="pie-legend-val">4 locales</span></div>
+        </div>
+      </div>
+      <div class="note"><strong>Nota:</strong> El precio de cuota de Feb 2025 (US$ 1,246.47) proviene de la BVRD. Los datos de rentabilidad y dividendos 2024-2025 son estimaciones basadas en tendencias históricas. Consulte fuentes oficiales (BVRD, SIMV, Fiduciaria Universal) para datos actualizados.</div>
+    </div>
+
+    <!-- PATRIMONIO -->
+    <div id="tab-patrimonio" class="tab-content">
+      <div class="section-title"><span class="icon">📈</span><h2>Evolución del Patrimonio (USD Millones)</h2><div class="line"></div></div>
+      <div class="chart-box"><canvas id="patrimonioChart"></canvas></div>
+      <div class="cards" style="margin-top:20px">
+        <div class="stat-card"><div class="stat-label">Colocación 2019</div><div class="stat-value">US$ 12.29M</div><div class="stat-sub">Monto recaudado</div></div>
+        <div class="stat-card"><div class="stat-label">Valoración 2021</div><div class="stat-value">US$ 13.99M</div><div class="stat-sub">Deloitte · +12.5% vs 2020</div></div>
+        <div class="stat-card"><div class="stat-label">Q1 2022</div><div class="stat-value">US$ 14.44M</div><div class="stat-sub">+1.73% trimestral</div></div>
+        <div class="stat-card accent"><div class="stat-label">Feb 2025</div><div class="stat-value">US$ 15.52M</div><div class="stat-sub">Estimado · BVRD</div></div>
+      </div>
+    </div>
+
+    <!-- CUOTA -->
+    <div id="tab-cuota" class="tab-content">
+      <div class="section-title"><span class="icon">💰</span><h2>Precio por Cuota de Participación (USD)</h2><div class="line"></div></div>
+      <div class="chart-box"><canvas id="cuotaChart"></canvas></div>
+      <div class="cards" style="margin-top:20px">
+        <div class="stat-card"><div class="stat-label">Valor Inicial</div><div class="stat-value">US$ 1,000</div><div class="stat-sub">Mar 2019 · Colocación</div></div>
+        <div class="stat-card accent"><div class="stat-label">Precio Actual</div><div class="stat-value">US$ 1,246</div><div class="stat-sub">Feb 2025 · BVRD</div></div>
+        <div class="stat-card accent"><div class="stat-label">Apreciación</div><div class="stat-value">+24.6%</div><div class="stat-sub">Desde colocación</div></div>
+      </div>
+    </div>
+
+    <!-- RENDIMIENTO -->
+    <div id="tab-rendimiento" class="tab-content">
+      <div class="section-title"><span class="icon">📊</span><h2>Rentabilidad Bruta Anual (%)</h2><div class="line"></div></div>
+      <div class="chart-box"><canvas id="rentabilidadChart"></canvas></div>
+      <div class="section-title"><span class="icon">💵</span><h2>Dividendos Distribuidos por Año (Miles USD)</h2><div class="line"></div></div>
+      <div class="chart-box"><canvas id="dividendosChart"></canvas></div>
+      <div class="cards" style="margin-top:20px">
+        <div class="stat-card accent"><div class="stat-label">Rent. Acumulada</div><div class="stat-value">41.1%</div><div class="stat-sub">Nov 2019 – Nov 2022</div></div>
+        <div class="stat-card"><div class="stat-label">Rent. Anualizada</div><div class="stat-value">13.4%</div><div class="stat-sub">Promedio 3 años</div></div>
+        <div class="stat-card accent"><div class="stat-label">Dividendos 2025</div><div class="stat-value">~US$ 1,010K</div><div class="stat-sub">Estimado · tendencia al alza</div></div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div>Fuentes: BVRD · SIMV · Feller Rate · Deloitte · Patio Capital Partners</div>
+      <div>Dashboard informativo · No constituye asesoría financiera</div>
+    </div>
+  </div>
+
+  <script>
+    // ── Tab Logic ──
+    var chartInstances = {};
+    var initialized = { general: true };
+
+    document.getElementById('tabBar').addEventListener('click', function(e) {
+      var btn = e.target.closest('.tab-btn');
+      if (!btn) return;
+      var tabId = btn.getAttribute('data-tab');
+
+      document.querySelectorAll('.tab-content').forEach(function(el) { el.classList.remove('active'); });
+      document.querySelectorAll('.tab-btn').forEach(function(el) { el.classList.remove('active'); });
+      document.getElementById('tab-' + tabId).classList.add('active');
+      btn.classList.add('active');
+
+      if (!initialized[tabId]) {
+        initialized[tabId] = true;
+        if (tabId === 'patrimonio') initPatrimonio();
+        if (tabId === 'cuota') initCuota();
+        if (tabId === 'rendimiento') initRendimiento();
+      }
+    });
+
+    // ── Chart.js Defaults ──
+    Chart.defaults.color = '#64748b';
+    Chart.defaults.font.family = "'DM Sans', sans-serif";
+    Chart.defaults.font.size = 11;
+
+    var ttBase = {
+      backgroundColor: 'rgba(15, 23, 42, 0.95)',
+      borderColor: 'rgba(20, 184, 166, 0.3)',
+      borderWidth: 1,
+      titleColor: '#94a3b8',
+      bodyColor: '#5eead4',
+      bodyFont: { weight: '600', size: 13 },
+      cornerRadius: 8,
+      padding: 12,
+      displayColors: false
+    };
+
+    var gridStyle = { color: 'rgba(51,65,85,0.3)' };
+
+    // ── Pie (init now) ──
+    new Chart(document.getElementById('pieChart'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Patio del Norte', 'Bella Vista Mall', 'Colinas Mall', 'Centro Nac. Este'],
+        datasets: [{ data: [25, 2, 6, 4], backgroundColor: ['#0f766e','#14b8a6','#5eead4','#99f6e4'], borderWidth: 0, spacing: 3 }]
+      },
+      options: {
+        cutout: '62%',
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          tooltip: Object.assign({}, ttBase, { callbacks: { label: function(ctx) { return ctx.label + ': ' + ctx.raw + ' locales'; } } }),
+          legend: { display: false }
+        }
+      }
+    });
+
+    // ── Patrimonio ──
+    function initPatrimonio() {
+      var ctx = document.getElementById('patrimonioChart').getContext('2d');
+      var grad = ctx.createLinearGradient(0, 0, 0, 340);
+      grad.addColorStop(0, 'rgba(20, 184, 166, 0.25)');
+      grad.addColorStop(1, 'rgba(20, 184, 166, 0.01)');
+
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['Abr 2019','Dic 2019','Dic 2020','Nov 2021','Q1 2022','Nov 2022','Dic 2023','Dic 2024','Feb 2025'],
+          datasets: [{
+            data: [12.29, 11.10, 12.44, 13.99, 14.44, 15.10, 15.40, 15.45, 15.52],
+            borderColor: '#14b8a6', borderWidth: 2.5,
+            backgroundColor: grad, fill: true, tension: 0.35,
+            pointBackgroundColor: '#0f172a', pointBorderColor: '#14b8a6',
+            pointBorderWidth: 2, pointRadius: 5, pointHoverRadius: 7, pointHoverBackgroundColor: '#14b8a6'
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: Object.assign({}, ttBase, { callbacks: { label: function(ctx) { return 'Patrimonio: $' + ctx.raw.toFixed(2) + 'M USD'; } } })
+          },
+          scales: {
+            y: { min: 10, max: 16.5, grid: gridStyle, border: { display: false }, ticks: { callback: function(v) { return '$' + v + 'M'; } } },
+            x: { grid: { display: false }, border: { color: 'rgba(51,65,85,0.4)' } }
+          }
+        }
+      });
+    }
+
+    // ── Cuota ──
+    function initCuota() {
+      var ctx = document.getElementById('cuotaChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['Mar 2019','Dic 2019','Dic 2020','Nov 2021','Abr 2022','Nov 2022','Dic 2023','Dic 2024','Feb 2025'],
+          datasets: [{
+            data: [1000, 987, 1000, 1125, 1155, 1180, 1210, 1235, 1246],
+            borderColor: '#5eead4', borderWidth: 3,
+            backgroundColor: 'transparent', fill: false, tension: 0.35,
+            pointBackgroundColor: '#0f172a', pointBorderColor: '#5eead4',
+            pointBorderWidth: 2.5, pointRadius: 5, pointHoverRadius: 8, pointHoverBackgroundColor: '#5eead4'
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: Object.assign({}, ttBase, { callbacks: { label: function(ctx) { return 'Precio: $' + ctx.raw.toLocaleString() + ' USD'; } } })
+          },
+          scales: {
+            y: { min: 950, max: 1300, grid: gridStyle, border: { display: false }, ticks: { callback: function(v) { return '$' + v; } } },
+            x: { grid: { display: false }, border: { color: 'rgba(51,65,85,0.4)' } }
+          }
+        }
+      });
+    }
+
+    // ── Rendimiento ──
+    function initRendimiento() {
+      var rentData = [2.5, 3.9, 8.2, 7.15, 6.8, 6.5, 6.8];
+      var rentColors = rentData.map(function(v) { return v >= 7 ? '#14b8a6' : v >= 5 ? '#0f766e' : '#134e4a'; });
+
+      new Chart(document.getElementById('rentabilidadChart'), {
+        type: 'bar',
+        data: {
+          labels: ['2019','2020','2021','2022','2023','2024','2025'],
+          datasets: [{ data: rentData, backgroundColor: rentColors, borderRadius: 6, maxBarThickness: 50 }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: Object.assign({}, ttBase, { callbacks: { label: function(ctx) { return 'Rentabilidad: ' + ctx.raw + '%'; } } })
+          },
+          scales: {
+            y: { min: 0, max: 10, grid: gridStyle, border: { display: false }, ticks: { callback: function(v) { return v + '%'; } } },
+            x: { grid: { display: false }, border: { color: 'rgba(51,65,85,0.4)' } }
+          }
+        }
+      });
+
+      var dCtx = document.getElementById('dividendosChart').getContext('2d');
+      var dGrad = dCtx.createLinearGradient(0, 0, 0, 280);
+      dGrad.addColorStop(0, '#5eead4');
+      dGrad.addColorStop(1, '#0f766e');
+
+      new Chart(dCtx, {
+        type: 'bar',
+        data: {
+          labels: ['2020','2021','2022','2023','2024','2025'],
+          datasets: [{ data: [520, 840, 986, 950, 980, 1010], backgroundColor: dGrad, borderRadius: 6, maxBarThickness: 50 }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: Object.assign({}, ttBase, { callbacks: { label: function(ctx) { return 'Dividendos: $' + ctx.raw + 'K USD'; } } })
+          },
+          scales: {
+            y: { min: 0, max: 1200, grid: gridStyle, border: { display: false }, ticks: { callback: function(v) { return '$' + v + 'K'; } } },
+            x: { grid: { display: false }, border: { color: 'rgba(51,65,85,0.4)' } }
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>
